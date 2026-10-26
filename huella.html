@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo 4: Huella Hídrica - Museo Virtual del Agua</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Tema oscuro y moderno estilo museo interactivo */
+        body {
+            background-color: #080f1e; /* Fondo azul muy oscuro */
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Estilo Touch Screen para los Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 15px 0;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 36px;
+            width: 36px;
+            border-radius: 50%;
+            background: #06b6d4; /* Cyan base */
+            cursor: pointer;
+            margin-top: -14px;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.8), inset 0 0 5px rgba(255,255,255,0.5);
+            border: 2px solid #fff;
+            transition: transform 0.1s, background-color 0.3s, box-shadow 0.3s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.1);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 10px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 5px;
+            border: 1px solid #334155;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        /* Paneles estilo terminal/pantalla interactiva */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+        }
+
+        /* Transiciones de color dinámicas para el resultado */
+        .status-green { color: #10b981; text-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+        .status-yellow { color: #f59e0b; text-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
+        .status-red { color: #ef4444; text-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+
+        .glow-green { box-shadow: 0 0 40px rgba(16, 185, 129, 0.3); border-color: rgba(16,185,129,0.5); }
+        .glow-yellow { box-shadow: 0 0 40px rgba(245, 158, 11, 0.3); border-color: rgba(245,158,11,0.5); }
+        .glow-red { box-shadow: 0 0 40px rgba(239, 68, 68, 0.4); border-color: rgba(239,68,68,0.5); }
+
+        /* Estilo para los valores resaltados en los controles */
+        .val-badge {
+            background: #1e293b;
+            padding: 4px 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            font-weight: bold;
+            color: #38bdf8;
+            min-width: 60px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        /* Decoración de fondo interactiva */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="relative">
+    <div class="bg-grid"></div>
+
+    <!-- Encabezado Táctil -->
+    <header class="p-6 border-b border-slate-800 flex justify-between items-center relative z-10 bg-slate-900/80 backdrop-blur-md">
+        <div>
+            <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 tracking-tight">
+                Módulo 4: Análisis de Consumo
+            </h1>
+            <p class="text-slate-400 text-sm tracking-widest uppercase mt-1">Terminal de Huella Hídrica</p>
+        </div>
+        <a href="index.html" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-600 px-6 py-3 rounded-xl font-bold uppercase tracking-wider transition-all shadow-lg flex items-center gap-2">
+            <span>◄</span> Volver al Lobby
+        </a>
+    </header>
+
+    <!-- Interfaz Principal -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-6 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start relative z-10">
+        
+        <!-- Controles Táctiles (Izquierda) -->
+        <div class="xl:col-span-7 glass-panel p-8">
+            <h2 class="text-2xl font-bold text-white mb-2 flex items-center gap-3">
+                <span class="text-cyan-400">⚙️</span> Parámetros Diarios
+            </h2>
+            <p class="text-slate-400 mb-10 text-lg">Desliza los controles para ajustar tus hábitos en el hogar.</p>
+
+            <div class="space-y-12">
+                <!-- Ducha -->
+                <div class="control-group">
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="font-semibold text-slate-200 text-xl flex items-center gap-3">
+                            🚿 Tiempo de Ducha
+                        </label>
+                        <div class="val-badge text-xl"><span id="val-shower">10</span> min</div>
+                    </div>
+                    <input type="range" id="slider-shower" min="1" max="30" value="10">
+                </div>
+
+                <!-- Inodoro -->
+                <div class="control-group">
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="font-semibold text-slate-200 text-xl flex items-center gap-3">
+                            🚽 Descargas del Inodoro
+                        </label>
+                        <div class="val-badge text-xl"><span id="val-toilet">4</span> descargas</div>
+                    </div>
+                    <input type="range" id="slider-toilet" min="1" max="15" value="4">
+                </div>
+
+                <!-- Lavaplatos -->
+                <div class="control-group">
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="font-semibold text-slate-200 text-xl flex items-center gap-3">
+                            🍽️ Lavado de Platos
+                        </label>
+                        <div class="val-badge text-xl"><span id="val-dishes">15</span> min</div>
+                    </div>
+                    <input type="range" id="slider-dishes" min="0" max="40" value="15">
+                </div>
+
+                <!-- Lavadora -->
+                <div class="control-group">
+                    <div class="flex justify-between items-center mb-4">
+                        <label class="font-semibold text-slate-200 text-xl flex items-center gap-3">
+                            🧺 Uso de Lavadora (semanal)
+                        </label>
+                        <div class="val-badge text-xl"><span id="val-laundry">2</span> cargas</div>
+                    </div>
+                    <input type="range" id="slider-laundry" min="0" max="10" value="2">
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de Resultados (Derecha) -->
+        <div class="xl:col-span-5 flex flex-col gap-6 sticky top-6">
+            
+            <!-- Panel de Datos Maestros -->
+            <div id="result-panel" class="glass-panel p-8 text-center transition-all duration-500 glow-yellow border-2">
+                <h3 class="text-slate-400 font-bold uppercase tracking-widest text-sm mb-2">Impacto Total Estimado</h3>
+                
+                <div class="my-8">
+                    <p class="text-slate-500 mb-1 text-lg">Consumo Diario</p>
+                    <div class="flex items-baseline justify-center gap-2">
+                        <span id="daily-total" class="text-7xl font-black font-mono transition-colors duration-300 status-yellow">0</span>
+                        <span class="text-2xl text-slate-400">Litros</span>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-700/50 pt-6 my-6">
+                    <p class="text-slate-500 mb-1 text-md">Proyección Mensual</p>
+                    <div class="flex items-baseline justify-center gap-2">
+                        <span id="monthly-total" class="text-4xl font-bold font-mono text-white">0</span>
+                        <span class="text-lg text-slate-400">Litros</span>
+                    </div>
+                </div>
+
+                <!-- Mensaje de Estado -->
+                <div id="status-badge" class="inline-block mt-4 px-6 py-2 rounded-full font-bold uppercase tracking-wider text-sm bg-yellow-900/50 text-yellow-400 border border-yellow-700">
+                    Calculando...
+                </div>
+            </div>
+
+            <!-- Panel de Inteligencia / Tips -->
+            <div class="glass-panel p-6 border-l-4 border-cyan-500">
+                <h3 class="text-cyan-400 font-bold flex items-center gap-2 mb-3 uppercase tracking-wider text-sm">
+                    💡 Análisis del Sistema
+                </h3>
+                <p id="dynamic-tip" class="text-slate-300 text-lg leading-relaxed">
+                    Ajusta los parámetros para recibir recomendaciones personalizadas basadas en tu perfil de consumo.
+                </p>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // --- CONSTANTES DE CONSUMO (Litros) ---
+        const LITER_PER_MIN_SHOWER = 10;   // 10L por minuto de ducha
+        const LITER_PER_FLUSH = 6;         // 6L por descarga de inodoro
+        const LITER_PER_MIN_DISHES = 8;    // 8L por minuto lavando platos (llave abierta)
+        const LITER_PER_LAUNDRY = 50;      // 50L por carga de lavadora
+
+        // --- REFERENCIAS AL DOM ---
+        // Sliders
+        const slShower = document.getElementById('slider-shower');
+        const slToilet = document.getElementById('slider-toilet');
+        const slDishes = document.getElementById('slider-dishes');
+        const slLaundry = document.getElementById('slider-laundry');
+
+        // Textos de valores
+        const valShower = document.getElementById('val-shower');
+        const valToilet = document.getElementById('val-toilet');
+        const valDishes = document.getElementById('val-dishes');
+        const valLaundry = document.getElementById('val-laundry');
+
+        // Resultados
+        const dailyDisplay = document.getElementById('daily-total');
+        const monthlyDisplay = document.getElementById('monthly-total');
+        const resultPanel = document.getElementById('result-panel');
+        const statusBadge = document.getElementById('status-badge');
+        const dynamicTip = document.getElementById('dynamic-tip');
+
+        // --- LÓGICA PRINCIPAL ---
+        function calculate() {
+            // 1. Obtener valores
+            const shower = parseInt(slShower.value);
+            const toilet = parseInt(slToilet.value);
+            const dishes = parseInt(slDishes.value);
+            const laundry = parseInt(slLaundry.value);
+
+            // 2. Actualizar etiquetas UI
+            valShower.textContent = shower;
+            valToilet.textContent = toilet;
+            valDishes.textContent = dishes;
+            valLaundry.textContent = laundry;
+
+            // 3. Cálculos
+            const dailyShower = shower * LITER_PER_MIN_SHOWER;
+            const dailyToilet = toilet * LITER_PER_FLUSH;
+            const dailyDishes = dishes * LITER_PER_MIN_DISHES;
+            const dailyLaundry = (laundry * LITER_PER_LAUNDRY) / 7; // Dividido en los días de la semana
+
+            const totalDaily = Math.round(dailyShower + dailyToilet + dailyDishes + dailyLaundry);
+            const totalMonthly = totalDaily * 30;
+
+            // 4. Actualizar números
+            dailyDisplay.textContent = totalDaily;
+            // Formatear mensual con separador de miles
+            monthlyDisplay.textContent = totalMonthly.toLocaleString('es-CO');
+
+            // 5. Actualizar interfaz visual (Colores y Tips)
+            updateUI(totalDaily, dailyShower, dailyToilet, dailyDishes, dailyLaundry);
+        }
+
+        function updateUI(daily, pShower, pToilet, pDishes, pLaundry) {
+            // Limpiar clases previas
+            dailyDisplay.classList.remove('status-green', 'status-yellow', 'status-red');
+            resultPanel.classList.remove('glow-green', 'glow-yellow', 'glow-red');
+            
+            // Configurar umbrales (Recomendación OMS ~100L diarios por persona)
+            let statusClass = '';
+            let glowClass = '';
+            let badgeText = '';
+            let badgeBg = '';
+
+            if (daily <= 120) {
+                // VERDE - Óptimo
+                statusClass = 'status-green';
+                glowClass = 'glow-green';
+                badgeText = 'CONSUMO ÓPTIMO';
+                badgeBg = 'bg-emerald-900/50 text-emerald-400 border-emerald-700';
+                dynamicTip.innerHTML = "¡Excelente! Estás dentro de los parámetros recomendados por la OMS. Tu huella hídrica demuestra una alta responsabilidad ambiental.";
+                updateThumbColors('#10b981');
+            } else if (daily > 120 && daily <= 250) {
+                // AMARILLO - Medio
+                statusClass = 'status-yellow';
+                glowClass = 'glow-yellow';
+                badgeText = 'CONSUMO MODERADO';
+                badgeBg = 'bg-yellow-900/50 text-yellow-400 border-yellow-700';
+                updateThumbColors('#f59e0b');
+                
+                // Generar tip dinámico basado en el mayor consumo
+                if (pShower >= pDishes && pShower >= pLaundry) {
+                    dynamicTip.innerHTML = "Tu mayor consumo está en la ducha. Reducir el tiempo a 5 minutos puede ahorrar más de 1,500 litros al mes.";
+                } else if (pDishes > pShower) {
+                    dynamicTip.innerHTML = "Gasto elevado en el lavado de platos. Intenta usar un recipiente para enjabonar y abre la llave solo para enjuagar.";
+                } else {
+                    dynamicTip.innerHTML = "Uso considerable. Verifica si tienes fugas invisibles en inodoros o grifos que estén elevando tu consumo.";
+                }
+            } else {
+                // ROJO - Crítico
+                statusClass = 'status-red';
+                glowClass = 'glow-red';
+                badgeText = 'CONSUMO CRÍTICO';
+                badgeBg = 'bg-red-900/50 text-red-400 border-red-700';
+                updateThumbColors('#ef4444');
+
+                dynamicTip.innerHTML = "¡ALERTA! Tu consumo es extremadamente alto y supera la capacidad sostenible del sistema. Considera reducir drásticamente el uso de la ducha y evitar dejar llaves abiertas.";
+            }
+
+            // Aplicar clases
+            dailyDisplay.classList.add(statusClass);
+            resultPanel.classList.add(glowClass);
+            statusBadge.textContent = badgeText;
+            statusBadge.className = `inline-block mt-4 px-6 py-2 rounded-full font-bold uppercase tracking-wider text-sm border ${badgeBg}`;
+        }
+
+        function updateThumbColors(color) {
+            // Cambiar el color de los sliders dinámicamente para igualar el estado
+            const style = document.createElement('style');
+            style.innerHTML = `
+                input[type=range]::-webkit-slider-thumb {
+                    background: ${color} !important;
+                    box-shadow: 0 0 15px ${color}, inset 0 0 5px rgba(255,255,255,0.8) !important;
+                }
+            `;
+            // Remover estilo anterior si existe
+            const oldStyle = document.getElementById('dynamic-thumb-style');
+            if (oldStyle) oldStyle.remove();
+            
+            style.id = 'dynamic-thumb-style';
+            document.head.appendChild(style);
+        }
+
+        // --- LISTENERS DE EVENTOS ---
+        // Escuchar cambios en todos los sliders para actualizar en tiempo real
+        [slShower, slToilet, slDishes, slLaundry].forEach(slider => {
+            slider.addEventListener('input', calculate);
+        });
+
+        // Inicializar cálculos al cargar la página
+        window.addEventListener('DOMContentLoaded', calculate);
+
+    </script>
+</body>
+</html>

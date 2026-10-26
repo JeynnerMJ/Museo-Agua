@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Museo Virtual del Agua - Módulo SCADA</title>
+    <!-- Tailwind CSS para los estilos base -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para el panel SCADA */
+        body {
+            background-color: #0b1120; /* Fondo muy oscuro, casi negro */
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Fuente monoespaciada para darle aspecto de sistema industrial */
+        .scada-font {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        /* Efecto de pantalla CRT antigua opcional para más realismo */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.1) 50%,
+                rgba(0,0,0,0.1)
+            );
+            background-size: 100% 4px;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* El contenedor del tanque de agua */
+        .tank-container {
+            width: 100%;
+            max-width: 250px;
+            height: 400px;
+            border: 6px solid #334155;
+            border-radius: 8px;
+            position: relative;
+            background-color: #1e293b;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            margin: 0 auto;
+        }
+
+        /* Regla de medición al lado del tanque */
+        .tank-ruler {
+            position: absolute;
+            left: 5px;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px 0;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.7rem;
+            z-index: 5;
+        }
+
+        /* El agua animada */
+        .water {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            /* Degradado azul para el agua */
+            background: linear-gradient(to top, #0369a1, #38bdf8);
+            transition: height 0.5s linear, background 0.3s ease;
+            box-shadow: 0 -2px 10px rgba(56, 189, 248, 0.5);
+        }
+
+        /* Animación para el estado de alerta (parpadeo) */
+        @keyframes pulseAlert {
+            0% { opacity: 1; text-shadow: 0 0 5px red; }
+            50% { opacity: 0.5; text-shadow: none; }
+            100% { opacity: 1; text-shadow: 0 0 5px red; }
+        }
+
+        .alert-pulse {
+            animation: pulseAlert 1s infinite;
+            color: #ef4444; /* Rojo Tailwind */
+        }
+
+        .stable-text {
+            color: #10b981; /* Verde Tailwind */
+            text-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Estilo industrial para los paneles de datos */
+        .data-panel {
+            background-color: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="scanlines"></div> <!-- Filtro visual sobre la pantalla -->
+
+    <div class="max-w-5xl mx-auto w-full flex-grow flex flex-col relative z-20">
+        
+        <!-- Encabezado del Sistema -->
+        <header class="flex justify-between items-center mb-8 border-b-2 border-slate-700 pb-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-blue-400">AGUAS DE CARTAGENA</h1>
+                <h2 class="text-sm md:text-base text-slate-400 scada-font uppercase tracking-widest">Estación de Telemando | Módulo de Prueba SCADA</h2>
+            </div>
+            <div class="text-right">
+                <p class="text-slate-400 text-sm">OPERADOR EN TURNO:</p>
+                <p class="scada-font text-green-400">GUEST_01</p>
+            </div>
+        <a href="index.html" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-600 px-6 py-3 rounded-xl font-bold uppercase tracking-wider transition-all shadow-lg flex items-center gap-2">
+            <span>◄</span> Volver al Lobby
+        </a>
+        </header>
+
+        <!-- Área de Juego / Simulación -->
+        <main class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow items-center">
+            
+            <!-- Panel Izquierdo: Telemetría -->
+            <div class="data-panel p-6 flex flex-col gap-6">
+                <div>
+                    <h3 class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Estado del Sistema</h3>
+                    <div id="system-status" class="scada-font text-xl stable-text">SISTEMA EN ESPERA</div>
+                </div>
+                <div>
+                    <h3 class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Demanda de la Ciudad (Salida)</h3>
+                    <div id="consumption-rate" class="scada-font text-lg text-yellow-400">0.0 L/s</div>
+                </div>
+                <div>
+                    <h3 class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Caudal de Llenado (Entrada)</h3>
+                    <div id="fill-rate" class="scada-font text-lg text-blue-400">0.0 L/s</div>
+                </div>
+                <div class="mt-auto">
+                    <h3 class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Tiempo Restante</h3>
+                    <div id="timer-display" class="scada-font text-3xl font-bold">01:00</div>
+                </div>
+            </div>
+
+            <!-- Panel Central: Tanque Visual -->
+            <div class="flex flex-col items-center">
+                <h3 class="text-slate-400 text-sm mb-4 uppercase tracking-wider">Tanque Principal 'El Bosque'</h3>
+                
+                <div class="tank-container">
+                    <!-- Regla guía -->
+                    <div class="tank-ruler scada-font">
+                        <span>100</span>
+                        <span>75</span>
+                        <span>50</span>
+                        <span>25</span>
+                        <span>0</span>
+                    </div>
+                    <!-- Agua -->
+                    <div id="tank-water" class="water" style="height: 50%;"></div>
+                </div>
+                
+                <div class="mt-6 flex justify-between w-full max-w-[250px] data-panel p-3">
+                    <span class="text-slate-400 text-xs uppercase">Nivel Actual:</span>
+                    <span id="level-display" class="scada-font text-blue-400 font-bold">50.0%</span>
+                </div>
+            </div>
+
+            <!-- Panel Derecho: Controles -->
+            <div class="data-panel p-6 flex flex-col justify-center gap-8 h-full">
+                <div class="text-center">
+                    <h3 class="text-slate-400 text-sm mb-4 uppercase tracking-wider">Control de Válvula Principal</h3>
+                    
+                    <!-- Botón de Válvula -->
+                    <button id="valve-btn" disabled 
+                        class="w-full py-6 rounded-lg text-xl font-bold uppercase transition-all duration-200 
+                               bg-slate-700 text-slate-500 cursor-not-allowed shadow-lg border-2 border-slate-600">
+                        Sistema Inactivo
+                    </button>
+                    <p class="text-xs text-slate-400 mt-3">Haz clic para abrir o cerrar la entrada de agua.</p>
+                </div>
+
+                <div class="mt-8 pt-8 border-t border-slate-700">
+                    <!-- Botón de Inicio de Simulación -->
+                    <button id="start-btn" onclick="startSimulation()" 
+                        class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(37,99,235,0.5)] transition-all">
+                        Iniciar Turno
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Fin de Juego (Oculto por defecto) -->
+    <div id="game-over-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="data-panel p-8 max-w-md w-full text-center relative">
+            <h2 id="modal-title" class="text-3xl font-bold mb-4 text-red-500">¡TURNO FINALIZADO!</h2>
+            <p id="modal-message" class="text-lg text-slate-300 mb-6">El mensaje irá aquí.</p>
+            
+            <div class="flex justify-between scada-font text-sm mb-8 bg-slate-800 p-4 rounded">
+                <div class="text-left text-slate-400">
+                    <p>Puntaje del Operador:</p>
+                    <p>Estado Final:</p>
+                </div>
+                <div class="text-right">
+                    <p id="modal-score" class="text-yellow-400 font-bold">0%</p>
+                    <p id="modal-status" class="text-white">CRÍTICO</p>
+                </div>
+            </div>
+
+            <button onclick="location.reload()" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold uppercase tracking-wider w-full">
+                Reiniciar Simulador
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- VARIABLES DE ESTADO DEL SISTEMA ---
+        let waterLevel = 50.0; // Inicia al 50%
+        let isValveOpen = false;
+        let isSimulationRunning = false;
+        let timeLeft = 60; // 60 segundos de reto
+        
+        let simulationInterval;
+        let timerInterval;
+
+        // Variables de balance hídrico
+        let baseConsumption = 1.8; // Lo que baja el tanque cada medio segundo
+        let currentConsumption = baseConsumption;
+        let fillRate = 3.5; // Lo que sube el tanque cuando la válvula está abierta
+
+        // --- REFERENCIAS A ELEMENTOS DEL DOM ---
+        const tankWater = document.getElementById('tank-water');
+        const levelDisplay = document.getElementById('level-display');
+        const systemStatus = document.getElementById('system-status');
+        const valveBtn = document.getElementById('valve-btn');
+        const startBtn = document.getElementById('start-btn');
+        const timerDisplay = document.getElementById('timer-display');
+        const consumptionDisplay = document.getElementById('consumption-rate');
+        const fillDisplay = document.getElementById('fill-rate');
+        
+        // Elementos del Modal
+        const gameOverModal = document.getElementById('game-over-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalScore = document.getElementById('modal-score');
+        const modalStatus = document.getElementById('modal-status');
+
+        // --- LÓGICA DEL JUEGO ---
+
+        function startSimulation() {
+            isSimulationRunning = true;
+            startBtn.disabled = true;
+            startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            startBtn.textContent = 'TURNO EN CURSO...';
+
+            // Activar botón de válvula
+            valveBtn.disabled = false;
+            updateValveButtonUI();
+            
+            // Asignar evento al botón de la válvula
+            valveBtn.addEventListener('click', toggleValve);
+
+            systemStatus.textContent = "SISTEMA ESTABLE";
+            
+            // Bucle principal de la simulación (cada 500ms)
+            simulationInterval = setInterval(gameLoop, 500);
+            
+            // Bucle del reloj (cada segundo)
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function toggleValve() {
+            if (!isSimulationRunning) return;
+            isValveOpen = !isValveOpen;
+            updateValveButtonUI();
+        }
+
+        function updateValveButtonUI() {
+            if (isValveOpen) {
+                valveBtn.textContent = "CERRAR VÁLVULA";
+                // Diseño de botón verde (abierto)
+                valveBtn.className = "w-full py-6 rounded-lg text-xl font-bold uppercase transition-all duration-200 bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(22,163,74,0.6)] border-2 border-green-400";
+                fillDisplay.textContent = `${(fillRate * 10).toFixed(1)} L/s`; // Simulación visual de caudal
+            } else {
+                valveBtn.textContent = "ABRIR VÁLVULA";
+                // Diseño de botón rojo (cerrado)
+                valveBtn.className = "w-full py-6 rounded-lg text-xl font-bold uppercase transition-all duration-200 bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.6)] border-2 border-red-400";
+                fillDisplay.textContent = "0.0 L/s";
+            }
+        }
+
+        function gameLoop() {
+            // 1. Variar un poco el consumo para que no sea estático (La ciudad exige más o menos agua)
+            currentConsumption = baseConsumption + (Math.random() * 0.8 - 0.4); 
+            consumptionDisplay.textContent = `${(currentConsumption * 10).toFixed(1)} L/s`;
+
+            // 2. Calcular nuevo nivel
+            waterLevel -= currentConsumption;
+            
+            if (isValveOpen) {
+                waterLevel += fillRate;
+            }
+
+            // 3. Limitar nivel entre 0 y 100
+            if (waterLevel > 100) waterLevel = 100;
+            if (waterLevel < 0) waterLevel = 0;
+
+            // 4. Actualizar Interfaz (Nivel visual y texto)
+            tankWater.style.height = `${waterLevel}%`;
+            levelDisplay.textContent = `${waterLevel.toFixed(1)}%`;
+
+            // 5. Verificar Alertas y fallas críticas
+            checkAlerts();
+
+            if (waterLevel >= 100) {
+                endGame(false, "DESBORDAMIENTO: El tanque alcanzó su límite máximo. Se inundaron las zonas aledañas y se desperdició agua tratada.");
+            } else if (waterLevel <= 0) {
+                endGame(false, "DESABASTECIMIENTO: El tanque se vació por completo. La presión en la red cayó y los barrios altos se quedaron sin servicio.");
+            }
+        }
+
+        function checkAlerts() {
+            // Cambiar estilos y mensajes según el nivel
+            if (waterLevel < 15) {
+                systemStatus.textContent = "ALERTA: BAJA PRESIÓN";
+                systemStatus.className = "scada-font text-xl alert-pulse";
+                tankWater.style.background = "linear-gradient(to top, #b91c1c, #f87171)"; // Agua roja
+                levelDisplay.className = "scada-font text-red-400 font-bold";
+            } else if (waterLevel > 85) {
+                systemStatus.textContent = "ALERTA: RIESGO DE REBOSE";
+                systemStatus.className = "scada-font text-xl alert-pulse";
+                tankWater.style.background = "linear-gradient(to top, #ea580c, #fb923c)"; // Agua naranja
+                levelDisplay.className = "scada-font text-orange-400 font-bold";
+            } else {
+                systemStatus.textContent = "SISTEMA ESTABLE";
+                systemStatus.className = "scada-font text-xl stable-text";
+                tankWater.style.background = "linear-gradient(to top, #0369a1, #38bdf8)"; // Agua azul normal
+                levelDisplay.className = "scada-font text-blue-400 font-bold";
+            }
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            
+            // Formatear MM:SS
+            let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            let s = (timeLeft % 60).toString().padStart(2, '0');
+            timerDisplay.textContent = `${m}:${s}`;
+
+            // Cambiar color cuando quede poco tiempo
+            if (timeLeft <= 10) {
+                timerDisplay.classList.add('text-red-500', 'alert-pulse');
+            }
+
+            if (timeLeft <= 0) {
+                endGame(true, "¡Turno finalizado con éxito! Lograste mantener el equilibrio del sistema y la ciudad tuvo un abastecimiento continuo.");
+            }
+        }
+
+        function endGame(isSuccess, message) {
+            isSimulationRunning = false;
+            clearInterval(simulationInterval);
+            clearInterval(timerInterval);
+
+            // Preparar modal
+            modalMessage.textContent = message;
+            
+            // Calcular un puntaje basado en qué tan cerca del 50% ideal terminó
+            let deviation = Math.abs(50 - waterLevel); 
+            let score = Math.max(0, 100 - (deviation * 2));
+            modalScore.textContent = `${score.toFixed(0)}/100 Pts`;
+
+            if (isSuccess) {
+                modalTitle.textContent = "¡EXCELENTE TURNO!";
+                modalTitle.className = "text-3xl font-bold mb-4 text-green-500";
+                modalStatus.textContent = "ÓPTIMO";
+                modalStatus.className = "text-green-400";
+            } else {
+                modalTitle.textContent = "FALLA CRÍTICA";
+                modalTitle.className = "text-3xl font-bold mb-4 text-red-500";
+                modalStatus.textContent = "DESPEDIDO (Virtualmente)";
+                modalStatus.className = "text-red-400";
+                modalScore.textContent = "0 Pts";
+            }
+
+            // Mostrar modal
+            gameOverModal.classList.remove('hidden');
+            gameOverModal.classList.add('flex');
+        }
+    </script>
+</body>
+</html>

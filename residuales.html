@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo 5: Aguas Residuales - Museo Virtual del Agua</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Tema oscuro coherente con el resto del museo */
+        body {
+            background-color: #080f1e; 
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+        }
+
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- ELEMENTOS DEL JUEGO --- */
+        .item-card {
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+            border: 4px solid #334155;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            z-index: 10;
+        }
+
+        .item-emoji {
+            font-size: 5rem;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+        }
+
+        /* Animaciones del Ítem */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+
+        @keyframes dropTrash {
+            to { transform: translate(-150px, 200px) scale(0) rotate(-90deg); opacity: 0; }
+        }
+        @keyframes dropDrain {
+            to { transform: translate(150px, 200px) scale(0) rotate(90deg); opacity: 0; }
+        }
+        .anim-trash { animation: dropTrash 0.6s forwards; }
+        .anim-drain { animation: dropDrain 0.6s forwards; }
+
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .anim-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .anim-error { animation: shake 0.5s; border-color: #ef4444 !important; box-shadow: 0 0 30px rgba(239,68,68,0.5) !important; }
+        .anim-success { border-color: #10b981 !important; box-shadow: 0 0 30px rgba(16,185,129,0.5) !important; }
+
+        /* Botones de acción */
+        .btn-choice {
+            width: 140px;
+            height: 140px;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.2s;
+            border: 4px solid transparent;
+        }
+        
+        .btn-basurero { background: #3f3f46; color: #d4d4d8; }
+        .btn-basurero:hover { background: #27272a; border-color: #a1a1aa; transform: scale(1.05); }
+        
+        .btn-desague { background: #0c4a6e; color: #38bdf8; }
+        .btn-desague:hover { background: #082f49; border-color: #0284c7; transform: scale(1.05); }
+
+        /* Emisario Submarino Background */
+        .ocean-bg {
+            background: linear-gradient(to bottom, transparent, rgba(8, 47, 73, 0.8));
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            bottom: -10px;
+            animation: rise infinite ease-in;
+        }
+        @keyframes rise {
+            to { transform: translateY(-300px); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="relative">
+    <div class="bg-grid"></div>
+
+    <!-- Encabezado -->
+    <header class="p-6 border-b border-slate-800 flex justify-between items-center relative z-10 bg-slate-900/80 backdrop-blur-md">
+        <div>
+            <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500 tracking-tight">
+                Módulo 5: Saneamiento
+            </h1>
+            <p class="text-slate-400 text-sm tracking-widest uppercase mt-1">Simulador de Alcantarillado</p>
+        </div>
+        <a href="index.html" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-600 px-6 py-3 rounded-xl font-bold uppercase tracking-wider transition-all shadow-lg flex items-center gap-2">
+            <span>◄</span> Volver al Lobby
+        </a>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+        
+        <!-- Área de Juego (Columna Izquierda) -->
+        <div class="lg:col-span-7 glass-panel p-8 flex flex-col relative text-center">
+            
+            <div class="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+                <div class="text-left">
+                    <p class="text-slate-400 text-xs uppercase tracking-widest mb-1">Puntaje Operativo</p>
+                    <p class="text-3xl font-mono font-bold text-indigo-400" id="score-display">0 <span class="text-lg text-slate-500">pts</span></p>
+                </div>
+                <div class="text-right">
+                    <p class="text-slate-400 text-xs uppercase tracking-widest mb-1">Progreso</p>
+                    <p class="text-xl font-bold text-white"><span id="current-item-num">1</span> / <span id="total-items-num">5</span></p>
+                </div>
+            </div>
+
+            <div id="game-area" class="flex-grow flex flex-col justify-center items-center py-10">
+                
+                <!-- Objeto a clasificar -->
+                <div id="item-card" class="item-card animate-float mb-6">
+                    <span id="item-emoji" class="item-emoji">🧽</span>
+                </div>
+                <h2 id="item-name" class="text-2xl font-bold text-white mb-12 uppercase tracking-wide">Cargando...</h2>
+
+                <!-- Botones de decisión -->
+                <div class="flex gap-8 w-full justify-center">
+                    <button onclick="makeChoice('basurero')" class="btn-choice btn-basurero" id="btn-trash">
+                        <span class="text-4xl mb-2">🗑️</span>
+                        <span>Basurero</span>
+                    </button>
+                    
+                    <button onclick="makeChoice('desague')" class="btn-choice btn-desague" id="btn-drain">
+                        <span class="text-4xl mb-2">🚽</span>
+                        <span>Desagüe</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Pantalla de Fin de Juego (Oculta por defecto) -->
+            <div id="game-over-screen" class="hidden absolute inset-0 bg-slate-900/95 rounded-2xl flex-col items-center justify-center p-8 z-20">
+                <span class="text-6xl mb-4">🌊</span>
+                <h2 class="text-3xl font-bold text-indigo-400 mb-2">¡Turno Finalizado!</h2>
+                <p class="text-slate-300 mb-6 max-w-md">Has completado la clasificación. Tus decisiones protegen el ecosistema marino de Cartagena.</p>
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-xl mb-8">
+                    <p class="text-sm text-slate-400 uppercase">Puntaje Final</p>
+                    <p id="final-score" class="text-4xl font-mono font-bold text-white">0</p>
+                </div>
+                <button onclick="initGame()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-wider transition-all">
+                    Jugar de Nuevo
+                </button>
+            </div>
+        </div>
+
+        <!-- Panel de Información (Columna Derecha) -->
+        <div class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Consola de Retroalimentación -->
+            <div id="feedback-panel" class="glass-panel p-6 border-l-4 border-slate-600 transition-colors duration-300">
+                <h3 class="text-slate-400 font-bold uppercase tracking-widest text-xs mb-3">Monitor de Red</h3>
+                <div class="flex items-start gap-4">
+                    <div id="feedback-icon" class="text-3xl opacity-50">📟</div>
+                    <p id="feedback-text" class="text-slate-300 text-lg leading-relaxed">
+                        Clasifica el residuo actual. El sistema evaluará el impacto de tu decisión en la red de alcantarillado.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Info Emisario Submarino -->
+            <div class="glass-panel p-6 flex-grow ocean-bg flex flex-col justify-end border border-cyan-900/50">
+                <!-- Burbujas generadas por JS -->
+                <div id="ocean-bubbles" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
+                
+                <div class="relative z-10 bg-slate-900/80 p-5 rounded-xl border border-cyan-800/50 backdrop-blur-sm">
+                    <h3 class="text-cyan-400 font-bold uppercase tracking-widest text-sm mb-2 flex items-center gap-2">
+                        <span>🌊</span> El Emisario Submarino
+                    </h3>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-3">
+                        Es un tubo de más de 4 kilómetros mar adentro. Su función es llevar las aguas residuales (previamente tratadas y filtradas) a una profundidad donde las bacterias marinas y la luz solar terminan de purificarlas naturalmente.
+                    </p>
+                    <p class="text-indigo-300 text-sm font-bold border-t border-slate-700 pt-3">
+                        ¡Si arrojas basura al desagüe, las bombas de este sistema se tapan y colapsan!
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // --- BASE DE DATOS DE RESIDUOS ---
+        const items = [
+            {
+                id: 'aceite',
+                name: 'Aceite de Cocina',
+                emoji: '🛢️',
+                correct: 'basurero',
+                errorMsg: '¡CRÍTICO! El aceite caliente parece inofensivo, pero al enfriarse en las tuberías se solidifica. Forma enormes tapones de grasa ("fatbergs") que destruyen la red de alcantarillado.',
+                successMsg: '¡Correcto! El aceite usado debe envasarse en una botella plástica y desecharse en la basura o llevarse a un punto de reciclaje.'
+            },
+            {
+                id: 'toallitas',
+                name: 'Toallitas Húmedas',
+                emoji: '🧽',
+                correct: 'basurero',
+                errorMsg: '¡PELIGRO! Las toallitas no se deshacen como el papel higiénico. Son de tela o plástico. Se enredan en las bombas de las estaciones y queman los motores.',
+                successMsg: '¡Bien hecho! Toda toallita húmeda, pañal o producto de higiene femenina debe ir estrictamente a la papelera.'
+            },
+            {
+                id: 'agua_jabon',
+                name: 'Agua de Lavado / Ducha',
+                emoji: '🧼',
+                correct: 'desague',
+                errorMsg: 'Esta es agua gris. El sistema de alcantarillado está diseñado exactamente para recoger esta agua y darle tratamiento antes de enviarla al mar.',
+                successMsg: '¡Correcto! El alcantarillado recoge las aguas grises y negras de tu hogar para ser tratadas en las plantas de Aguas de Cartagena.'
+            },
+            {
+                id: 'comida',
+                name: 'Restos de Comida',
+                emoji: '🍝',
+                correct: 'basurero',
+                errorMsg: '¡ALERTA! Los restos de comida, arroz o huesos en el lavaplatos atraen plagas a las tuberías y generan bloqueos severos por acumulación de materia orgánica.',
+                successMsg: '¡Perfecto! Utiliza rejillas en tu lavaplatos y arroja los residuos sólidos orgánicos siempre a la basura.'
+            },
+            {
+                id: 'cabello',
+                name: 'Bolas de Cabello',
+                emoji: '💇',
+                correct: 'basurero',
+                errorMsg: 'El cabello es extremadamente resistente. En la tubería actúa como una red que atrapa jabón y grasa, formando un tapón impenetrable.',
+                successMsg: '¡Excelente! Limpiar el sifón de la ducha y tirar el cabello a la papelera salva tus tuberías de taponamientos.'
+            }
+        ];
+
+        // --- VARIABLES DE ESTADO ---
+        let currentQueue = [];
+        let currentIndex = 0;
+        let score = 0;
+        let isAnimating = false;
+
+        // Referencias DOM
+        const elItemCard = document.getElementById('item-card');
+        const elItemEmoji = document.getElementById('item-emoji');
+        const elItemName = document.getElementById('item-name');
+        const elScore = document.getElementById('score-display');
+        const elCurrentNum = document.getElementById('current-item-num');
+        const elTotalNum = document.getElementById('total-items-num');
+        const elFeedbackPanel = document.getElementById('feedback-panel');
+        const elFeedbackIcon = document.getElementById('feedback-icon');
+        const elFeedbackText = document.getElementById('feedback-text');
+        const elGameOver = document.getElementById('game-over-screen');
+        const elFinalScore = document.getElementById('final-score');
+        const elBtnTrash = document.getElementById('btn-trash');
+        const elBtnDrain = document.getElementById('btn-drain');
+
+        // Inicializar Juego
+        function initGame() {
+            // Barajar items aleatoriamente
+            currentQueue = [...items].sort(() => Math.random() - 0.5);
+            currentIndex = 0;
+            score = 0;
+            
+            elTotalNum.textContent = currentQueue.length;
+            elScore.innerHTML = `0 <span class="text-lg text-slate-500">pts</span>`;
+            elGameOver.classList.add('hidden');
+            elGameOver.classList.remove('flex');
+            
+            resetFeedback();
+            loadItem();
+            createBubbles();
+        }
+
+        // Cargar el siguiente item
+        function loadItem() {
+            isAnimating = false;
+            elBtnTrash.disabled = false;
+            elBtnDrain.disabled = false;
+            
+            // Restablecer animaciones
+            elItemCard.className = 'item-card animate-float anim-pop';
+            
+            const item = currentQueue[currentIndex];
+            elItemEmoji.textContent = item.emoji;
+            elItemName.textContent = item.name;
+            elCurrentNum.textContent = currentIndex + 1;
+        }
+
+        // Procesar la decisión del usuario
+        function makeChoice(choice) {
+            if (isAnimating) return;
+            isAnimating = true;
+            elBtnTrash.disabled = true;
+            elBtnDrain.disabled = true;
+
+            const item = currentQueue[currentIndex];
+            const isCorrect = (choice === item.correct);
+
+            // 1. Animar la tarjeta hacia donde el usuario hizo clic
+            elItemCard.classList.remove('animate-float', 'anim-pop');
+            if (choice === 'basurero') {
+                elItemCard.classList.add('anim-trash');
+            } else {
+                elItemCard.classList.add('anim-drain');
+            }
+
+            // 2. Procesar resultado
+            if (isCorrect) {
+                score += 20;
+                elScore.innerHTML = `${score} <span class="text-lg text-slate-500">pts</span>`;
+                showFeedback(true, item.successMsg);
+            } else {
+                showFeedback(false, item.errorMsg);
+            }
+
+            // 3. Preparar siguiente turno
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex < currentQueue.length) {
+                    loadItem();
+                } else {
+                    endGame();
+                }
+            }, 1500);
+        }
+
+        // Mostrar panel de retroalimentación
+        function showFeedback(isCorrect, message) {
+            elFeedbackPanel.className = 'glass-panel p-6 border-l-4 transition-all duration-300 ' + 
+                                      (isCorrect ? 'border-emerald-500 bg-emerald-900/20' : 'border-red-500 bg-red-900/20');
+            
+            elFeedbackIcon.textContent = isCorrect ? '✅' : '❌';
+            elFeedbackIcon.className = 'text-3xl ' + (isCorrect ? 'text-emerald-400' : 'text-red-400');
+            
+            elFeedbackText.innerHTML = `<strong class="${isCorrect ? 'text-emerald-400' : 'text-red-400'}">${isCorrect ? '¡PROCESO ÓPTIMO!' : '¡FALLA DETECTADA!'}</strong><br>${message}`;
+
+            if (!isCorrect) {
+                // Efecto visual de error en el contenedor central
+                document.getElementById('game-area').classList.add('anim-error');
+                setTimeout(() => {
+                    document.getElementById('game-area').classList.remove('anim-error');
+                }, 500);
+            }
+        }
+
+        function resetFeedback() {
+            elFeedbackPanel.className = 'glass-panel p-6 border-l-4 border-slate-600 transition-colors duration-300';
+            elFeedbackIcon.textContent = '📟';
+            elFeedbackIcon.className = 'text-3xl opacity-50';
+            elFeedbackText.innerHTML = 'Clasifica el residuo actual. El sistema evaluará el impacto de tu decisión en la red de alcantarillado.';
+        }
+
+        function endGame() {
+            elGameOver.classList.remove('hidden');
+            elGameOver.classList.add('flex');
+            elFinalScore.textContent = score;
+        }
+
+        // Efectos visuales de fondo (burbujas en el emisario)
+        function createBubbles() {
+            const container = document.getElementById('ocean-bubbles');
+            container.innerHTML = '';
+            for(let i=0; i<15; i++) {
+                let bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                let size = Math.random() * 15 + 5; // 5 a 20px
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${Math.random() * 100}%`;
+                bubble.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                bubble.style.animationDelay = `${Math.random() * 2}s`;
+                container.appendChild(bubble);
+            }
+        }
+
+        // Iniciar al cargar
+        window.addEventListener('DOMContentLoaded', initGame);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo 2: Laboratorio - Museo Virtual del Agua</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Tema oscuro y moderno (Dark UI / Glassmorphism) */
+        body {
+            background-color: #080f1e; 
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Paneles estilo terminal/pantalla interactiva */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+        }
+
+        /* Decoración de fondo */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- CONTENEDOR DEL TANQUE / VASO --- */
+        .beaker-container {
+            width: 250px;
+            height: 350px;
+            margin: 0 auto;
+            position: relative;
+            /* Forma de vaso de laboratorio/tanque */
+            border: 8px solid #cbd5e1;
+            border-top: none;
+            border-radius: 0 0 20px 20px;
+            background: rgba(255,255,255,0.05);
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(255,255,255,0.1), inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* Agua animada */
+        .water {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 85%;
+            transition: all 1.5s ease-in-out;
+            z-index: 1;
+        }
+
+        /* Estados del agua (Colores) */
+        .water-turbid { background-color: #8b7355; box-shadow: inset 0 -20px 30px #5c4731; }
+        .water-coagulated { background-color: #7b6851; }
+        .water-decanted { 
+            background: linear-gradient(to bottom, #94a3b8 0%, #64748b 70%, #475569 100%); 
+        }
+        .water-filtered { background-color: #38bdf8; box-shadow: inset 0 -20px 30px #0284c7; }
+        .water-potable { 
+            background-color: #06b6d4; 
+            box-shadow: inset 0 0 30px #22d3ee, 0 0 50px rgba(6,182,212,0.4); 
+        }
+
+        /* Partículas (Flóculos) generadas con JS */
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background-color: #3e2723;
+            border-radius: 50%;
+            z-index: 2;
+            transition: all 2s ease-in-out;
+            opacity: 0;
+        }
+
+        /* Botones de acción */
+        .action-btn {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-coagulante { background: #475569; color: white; border-color: #64748b; }
+        .btn-coagulante:hover:not(:disabled) { background: #334155; border-color: #94a3b8; }
+        
+        .btn-decantar { background: #78350f; color: white; border-color: #92400e; }
+        .btn-decantar:hover:not(:disabled) { background: #451a03; border-color: #b45309; }
+
+        .btn-filtrar { background: #1e3a8a; color: white; border-color: #1e40af; }
+        .btn-filtrar:hover:not(:disabled) { background: #172554; border-color: #2563eb; }
+
+        .btn-cloro { background: #064e3b; color: white; border-color: #065f46; }
+        .btn-cloro:hover:not(:disabled) { background: #022c22; border-color: #10b981; }
+
+        /* Brillo para botón completado */
+        .btn-done {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
+
+        /* Animación de Alerta de Error */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .error-shake {
+            animation: shake 0.5s;
+            border-color: #ef4444 !important;
+        }
+    </style>
+</head>
+<body class="relative">
+    <div class="bg-grid"></div>
+
+    <!-- Encabezado Táctil -->
+    <header class="p-6 border-b border-slate-800 flex justify-between items-center relative z-10 bg-slate-900/80 backdrop-blur-md">
+        <div>
+            <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 tracking-tight">
+                Módulo 2: Laboratorio Químico
+            </h1>
+            <p class="text-slate-400 text-sm tracking-widest uppercase mt-1">Simulador de Planta de Tratamiento</p>
+        </div>
+        <a href="index.html" class="bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-600 px-6 py-3 rounded-xl font-bold uppercase tracking-wider transition-all shadow-lg flex items-center gap-2">
+            <span>◄</span> Volver al Lobby
+        </a>
+    </header>
+
+    <!-- Interfaz Principal -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative z-10">
+        
+        <!-- Panel Izquierdo: Controles (Columna 1) -->
+        <div class="lg:col-span-3 glass-panel p-6 flex flex-col justify-center">
+            <h2 class="text-xl font-bold text-white mb-2 flex items-center gap-2 border-b border-slate-700 pb-3">
+                <span>🎛️</span> Procesos
+            </h2>
+            <p class="text-slate-400 text-sm mb-6">Aplica los químicos y procesos en el orden correcto para purificar el agua cruda.</p>
+
+            <div id="controls-container">
+                <button id="btn-coagulante" class="action-btn btn-coagulante" onclick="processStep('coagulante')">
+                    <span class="text-2xl">🧪</span> 1. Coagulante
+                </button>
+                <button id="btn-decantar" class="action-btn btn-decantar" onclick="processStep('decantar')">
+                    <span class="text-2xl">⏳</span> 2. Decantar
+                </button>
+                <button id="btn-filtrar" class="action-btn btn-filtrar" onclick="processStep('filtrar')">
+                    <span class="text-2xl">🚰</span> 3. Filtrar
+                </button>
+                <button id="btn-cloro" class="action-btn btn-cloro" onclick="processStep('cloro')">
+                    <span class="text-2xl">✨</span> 4. Cloro
+                </button>
+            </div>
+            
+            <button onclick="resetLab()" class="mt-6 w-full py-3 bg-red-900/50 hover:bg-red-800/80 text-red-300 rounded-lg text-sm font-bold tracking-wider uppercase transition-colors border border-red-800">
+                Reiniciar Muestra
+            </button>
+        </div>
+
+        <!-- Panel Central: Tanque Visual (Columna 2) -->
+        <div class="lg:col-span-5 glass-panel p-6 flex flex-col items-center justify-center relative">
+            
+            <!-- Etiqueta Estado -->
+            <div id="status-tag" class="absolute top-6 px-4 py-1 bg-yellow-600/30 text-yellow-400 rounded-full text-sm font-bold uppercase tracking-wider border border-yellow-600/50">
+                Agua Cruda (Turbia)
+            </div>
+
+            <div class="beaker-container mt-12 mb-4" id="beaker">
+                <div id="water" class="water water-turbid"></div>
+                <!-- Partículas generadas por JS se agregarán aquí -->
+            </div>
+            
+            <h3 class="text-slate-400 font-mono text-sm uppercase">Tanque de Pruebas 01</h3>
+        </div>
+
+        <!-- Panel Derecho: Explicación (Columna 3) -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Bitácora de Procesos -->
+            <div class="glass-panel p-6 flex-grow flex flex-col">
+                <h3 class="text-cyan-400 font-bold flex items-center gap-2 mb-4 uppercase tracking-wider text-sm border-b border-slate-700 pb-2">
+                    📋 Bitácora Científica
+                </h3>
+                
+                <div class="flex-grow flex items-center">
+                    <p id="info-text" class="text-slate-300 text-lg leading-relaxed">
+                        El agua cruda llega desde el Canal del Dique llena de sedimentos, arena, arcilla y bacterias. Es de color café y no es apta para el consumo humano.<br><br>
+                        <strong>Tu misión:</strong> Aplica los procesos del panel izquierdo en el orden correcto. ¿Cuál es el primer paso para purificarla?
+                    </p>
+                </div>
+            </div>
+
+            <!-- Panel de Notificaciones (Errores o Éxito) -->
+            <div id="notification-panel" class="glass-panel p-6 border-l-4 border-slate-600 opacity-50 transition-all duration-300">
+                <p id="notification-text" class="text-slate-400 font-mono text-sm">Esperando acción del operador...</p>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // --- LÓGICA DEL LABORATORIO ---
+        
+        // Secuencia correcta de procesos
+        const correctSequence = ['coagulante', 'decantar', 'filtrar', 'cloro'];
+        let currentStepIndex = 0;
+
+        // Base de datos de textos para la bitácora
+        const stepData = {
+            coagulante: {
+                title: "1. Coagulación / Floculación",
+                desc: "Has añadido sulfato de aluminio o polímeros. Las diminutas partículas de suciedad que enturbian el agua (que tienen carga eléctrica y se repelen) ahora se atraen, formando grumos más grandes y pesados llamados 'flóculos'.",
+                tag: "Flóculos formados",
+                tagClass: "bg-orange-600/30 text-orange-400 border-orange-600/50",
+                waterClass: "water-coagulated"
+            },
+            decantar: {
+                title: "2. Decantación",
+                desc: "Al dejar el agua en reposo, la gravedad hace su trabajo. Los flóculos pesados que se formaron en el paso anterior se asientan en el fondo del tanque. El agua en la superficie queda mucho más clara y libre de tierra.",
+                tag: "Sedimentos separados",
+                tagClass: "bg-slate-600/50 text-slate-300 border-slate-500",
+                waterClass: "water-decanted"
+            },
+            filtrar: {
+                title: "3. Filtración",
+                desc: "El agua ha pasado por lechos de arena, antracita y grava. Este filtro mecánico atrapa las impurezas microscópicas que no cayeron en la decantación. El agua ahora es transparente, ¡pero aún podría tener bacterias!",
+                tag: "Agua Filtrada",
+                tagClass: "bg-blue-600/30 text-blue-400 border-blue-600/50",
+                waterClass: "water-filtered"
+            },
+            cloro: {
+                title: "4. Desinfección (Cloración)",
+                desc: "¡Felicidades! Has añadido cloro (o gas cloro). Esto destruye cualquier bacteria, virus o microorganismo patógeno restante. El agua ahora es 100% segura para el consumo humano y está lista para viajar a la ciudad.",
+                tag: "Agua Potable",
+                tagClass: "bg-cyan-600/30 text-cyan-400 border-cyan-400/50 shadow-[0_0_15px_rgba(6,182,212,0.5)]",
+                waterClass: "water-potable"
+            }
+        };
+
+        // Referencias DOM
+        const water = document.getElementById('water');
+        const beaker = document.getElementById('beaker');
+        const infoText = document.getElementById('info-text');
+        const statusTag = document.getElementById('status-tag');
+        const notifPanel = document.getElementById('notification-panel');
+        const notifText = document.getElementById('notification-text');
+
+        let particles = [];
+
+        function processStep(stepId) {
+            // Verificar si el paso presionado es el correcto
+            if (stepId === correctSequence[currentStepIndex]) {
+                // PASO CORRECTO
+                executeCorrectStep(stepId);
+            } else {
+                // PASO INCORRECTO
+                showError(stepId);
+            }
+        }
+
+        function executeCorrectStep(stepId) {
+            const data = stepData[stepId];
+
+            // 1. Actualizar Bitácora
+            infoText.innerHTML = `<strong>${data.title}</strong><br><br>${data.desc}`;
+            
+            // 2. Actualizar Etiqueta del Tanque
+            statusTag.textContent = data.tag;
+            statusTag.className = `absolute top-6 px-4 py-1 rounded-full text-sm font-bold uppercase tracking-wider border transition-colors ${data.tagClass}`;
+
+            // 3. Cambiar el color del agua
+            water.className = `water ${data.waterClass}`;
+
+            // 4. Deshabilitar el botón recién presionado
+            document.getElementById(`btn-${stepId}`).classList.add('btn-done');
+            document.getElementById(`btn-${stepId}`).disabled = true;
+
+            // 5. Animaciones Especiales del Tanque
+            if (stepId === 'coagulante') {
+                createParticles();
+                showNotification("Coagulante aplicado correctamente.", "success");
+            } else if (stepId === 'decantar') {
+                sinkParticles();
+                showNotification("Proceso de decantación completado.", "success");
+            } else if (stepId === 'filtrar') {
+                removeParticles();
+                showNotification("Filtración exitosa. Pureza visual alcanzada.", "success");
+            } else if (stepId === 'cloro') {
+                addSparkles();
+                showNotification("¡SISTEMA ESTABLE! Agua apta para distribución.", "success");
+            }
+
+            // 6. Avanzar al siguiente paso
+            currentStepIndex++;
+        }
+
+        function showError(stepId) {
+            const btn = document.getElementById(`btn-${stepId}`);
+            btn.classList.add('error-shake');
+            
+            setTimeout(() => {
+                btn.classList.remove('error-shake');
+            }, 500);
+
+            showNotification("ERROR DE PROCEDIMIENTO: Ese no es el orden correcto en una planta de tratamiento. Reiniciando muestra...", "error");
+            
+            // Castigo: si se equivoca, tiene que empezar de cero (como en química real)
+            setTimeout(resetLab, 2000);
+        }
+
+        function showNotification(msg, type) {
+            notifText.textContent = msg;
+            notifPanel.classList.remove('opacity-50', 'border-slate-600', 'border-red-500', 'border-green-500');
+            
+            if (type === 'error') {
+                notifPanel.classList.add('border-red-500', 'opacity-100');
+                notifText.classList.replace('text-slate-400', 'text-red-400');
+            } else {
+                notifPanel.classList.add('border-green-500', 'opacity-100');
+                notifText.classList.replace('text-slate-400', 'text-green-400');
+            }
+
+            // Volver a estado normal después de 4 segundos
+            setTimeout(() => {
+                notifPanel.classList.remove('border-red-500', 'border-green-500', 'opacity-100');
+                notifPanel.classList.add('opacity-50', 'border-slate-600');
+                notifText.classList.replace('text-red-400', 'text-slate-400');
+                notifText.classList.replace('text-green-400', 'text-slate-400');
+                if(type !== 'error') notifText.textContent = "Esperando acción del operador...";
+            }, 4000);
+        }
+
+        function resetLab() {
+            currentStepIndex = 0;
+            
+            // Resetear UI text
+            infoText.innerHTML = "El agua cruda llega desde el Canal del Dique llena de sedimentos, arena, arcilla y bacterias. Es de color café y no es apta para el consumo humano.<br><br><strong>Tu misión:</strong> Aplica los procesos del panel izquierdo en el orden correcto.";
+            
+            statusTag.textContent = "Agua Cruda (Turbia)";
+            statusTag.className = "absolute top-6 px-4 py-1 bg-yellow-600/30 text-yellow-400 rounded-full text-sm font-bold uppercase tracking-wider border border-yellow-600/50";
+            
+            // Resetear Agua
+            water.className = "water water-turbid";
+            
+            // Resetear Botones
+            correctSequence.forEach(id => {
+                const btn = document.getElementById(`btn-${id}`);
+                btn.classList.remove('btn-done');
+                btn.disabled = false;
+            });
+
+            // Limpiar vaso
+            removeParticles();
+            showNotification("Laboratorio reiniciado.", "normal");
+        }
+
+        // --- EFECTOS VISUALES DEL TANQUE ---
+        
+        function createParticles() {
+            // Genera 50 puntitos oscuros flotando al azar
+            for (let i = 0; i < 50; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                
+                // Posición inicial aleatoria dentro del agua
+                const left = Math.random() * 90 + 5; // 5% a 95%
+                const bottom = Math.random() * 80 + 5; // 5% a 85%
+                
+                p.style.left = `${left}%`;
+                p.style.bottom = `${bottom}%`;
+                
+                beaker.appendChild(p);
+                particles.push(p);
+
+                // Fade in
+                setTimeout(() => { p.style.opacity = '1'; }, Math.random() * 500);
+            }
+        }
+
+        function sinkParticles() {
+            // Animar partículas cayendo al fondo (Decantación)
+            particles.forEach(p => {
+                // Caer al fondo (entre 0 y 5%)
+                const targetBottom = Math.random() * 5; 
+                p.style.bottom = `${targetBottom}%`;
+                // Agruparse un poco
+                p.style.transform = `scale(${Math.random() * 1.5 + 1})`; 
+            });
+        }
+
+        function removeParticles() {
+            // Eliminar partículas (Filtración)
+            particles.forEach(p => {
+                p.style.opacity = '0';
+                setTimeout(() => p.remove(), 1000);
+            });
+            particles = [];
+            
+            // Quitar chispas si existen (del cloro)
+            document.querySelectorAll('.sparkle').forEach(s => s.remove());
+        }
+
+        function addSparkles() {
+            // Efecto visual de desinfección/limpieza extrema
+            for (let i = 0; i < 15; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle sparkle';
+                p.style.backgroundColor = '#ffffff';
+                p.style.boxShadow = '0 0 5px #fff';
+                
+                const left = Math.random() * 90 + 5;
+                const bottom = Math.random() * 80 + 5;
+                
+                p.style.left = `${left}%`;
+                p.style.bottom = `${bottom}%`;
+                
+                beaker.appendChild(p);
+                
+                // Animar parpadeo
+                setInterval(() => {
+                    p.style.opacity = Math.random() > 0.5 ? '1' : '0.2';
+                }, 500 + Math.random() * 500);
+            }
+        }
+    </script>
+</body>
+</html>

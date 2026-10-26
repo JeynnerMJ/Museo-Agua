@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Museo Virtual del Agua - Aguas de Cartagena</title>
+    <!-- Tailwind CSS para utilidades rápidas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* --- VARIABLES CORPORATIVAS OFICIALES DE AGUAS DE CARTAGENA --- */
+        :root {
+            --theme-font-stack-default: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+            --theme-font-family: var(--theme-font-stack-default);
+            --theme-font-weight: 400;
+            --theme-font-size: 16px;
+            --theme-line-height: 1.65;
+            
+            --theme-palette-color-1: #3a5da5; /* Azul primario claro */
+            --theme-palette-color-2: #24417C; /* Azul oscuro corporativo */
+            --theme-palette-color-3: #355575;
+            --theme-palette-color-4: #24417C;
+            --theme-palette-color-5: #E7EBEE; /* Gris bordes */
+            --theme-palette-color-6: #F3F5F7; /* Gris fondo muy claro */
+            --theme-palette-color-7: #F7FAFD;
+            --theme-palette-color-8: #ffffff; /* Blanco */
+            --theme-palette-color-9: #FFE8DA;
+            --theme-palette-color-10: #236fa1; /* Azul cyan / Títulos */
+            --theme-palette-color-11: #7ab968; /* Verde sostenibilidad */
+            --theme-palette-color-12: #000000;
+            
+            --theme-text-color: #333333;
+            --theme-headings-color: var(--theme-palette-color-2);
+            --theme-border-color: var(--theme-palette-color-5);
+            
+            --theme-button-min-height: 50px;
+            --theme-button-text-initial-color: #ffffff;
+            --theme-button-background-initial-color: var(--theme-palette-color-2);
+            --theme-button-background-hover-color: var(--theme-palette-color-10);
+            --theme-button-border-radius: 150px; /* Bordes totalmente redondeados */
+            --theme-button-padding: 12px 30px;
+            --theme-button-font-weight: 700;
+            --theme-button-text-transform: uppercase;
+            --theme-button-font-size: 14px;
+
+            --theme-normal-container-max-width: 1290px;
+            --theme-content-vertical-spacing: 60px;
+            
+            --theme-transition: all 0.3s cubic-bezier(0.455, 0.03, 0.515, 0.955);
+            --wp--preset--shadow--natural: 0 10px 30px rgba(36, 65, 124, 0.08);
+        }
+
+        /* --- ESTILOS BASE CORPORATIVOS --- */
+        body {
+            font-family: var(--theme-font-family);
+            font-size: var(--theme-font-size);
+            line-height: var(--theme-line-height);
+            color: var(--theme-text-color);
+            background-color: var(--theme-palette-color-6);
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--theme-headings-color);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        /* --- HEADER Y BANNER --- */
+        .corporate-header {
+            background: linear-gradient(135deg, var(--theme-palette-color-2) 0%, var(--theme-palette-color-10) 100%);
+            border-bottom: 5px solid var(--theme-palette-color-11);
+            padding: 40px 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Patrón sutil de fondo en el header */
+        .corporate-header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .header-container {
+            max-width: var(--theme-normal-container-max-width);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 30px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-logo img {
+            max-height: 140px;
+            width: auto;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            transition: var(--theme-transition);
+        }
+
+        .header-logo img:hover {
+            transform: scale(1.02);
+        }
+
+        .header-text {
+            text-align: right;
+            color: var(--theme-palette-color-8);
+        }
+
+        /* --- SECCIÓN DE MÓDULOS --- */
+        .container-main {
+            max-width: var(--theme-normal-container-max-width);
+            margin: 0 auto;
+            padding: var(--theme-content-vertical-spacing) 20px;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .section-title h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .section-title .divider {
+            width: 80px;
+            height: 4px;
+            background-color: var(--theme-palette-color-11);
+            margin: 0 auto;
+            border-radius: 2px;
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 30px;
+        }
+
+        /* --- TARJETAS --- */
+        .corporate-card {
+            background-color: var(--theme-palette-color-8);
+            border: 1px solid var(--theme-border-color);
+            border-radius: 16px;
+            padding: 40px 30px;
+            box-shadow: var(--wp--preset--shadow--natural);
+            transition: var(--theme-transition);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Línea superior decorativa */
+        .corporate-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 5px;
+            background-color: var(--theme-palette-color-10);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .corporate-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(36, 65, 124, 0.12);
+            border-color: var(--theme-palette-color-10);
+        }
+
+        .corporate-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .corporate-card h3 {
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--theme-palette-color-2);
+        }
+
+        .corporate-card p {
+            flex-grow: 1;
+            margin-bottom: 35px;
+            color: #5a6b7c;
+            font-size: 15px;
+        }
+
+        /* --- BOTONES --- */
+        .corporate-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: var(--theme-button-min-height);
+            padding: var(--theme-button-padding);
+            background-color: var(--theme-button-background-initial-color);
+            color: var(--theme-button-text-initial-color) !important;
+            border-radius: var(--theme-button-border-radius);
+            font-weight: var(--theme-button-font-weight);
+            font-size: var(--theme-button-font-size);
+            text-transform: var(--theme-button-text-transform);
+            text-decoration: none;
+            transition: var(--theme-transition);
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(36, 65, 124, 0.2);
+        }
+
+        .corporate-btn:hover {
+            background-color: var(--theme-button-background-hover-color);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(35, 111, 161, 0.3);
+        }
+
+        /* --- INSIGNIAS --- */
+        .status-badge {
+            position: absolute;
+            top: 20px; right: 20px;
+            background-color: var(--theme-palette-color-7);
+            color: var(--theme-palette-color-10);
+            border: 1px solid rgba(35, 111, 161, 0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .badge-highlight {
+            background-color: var(--theme-palette-color-11);
+            color: white;
+            border-color: var(--theme-palette-color-11);
+        }
+
+        /* --- FOOTER --- */
+        .footer-corporate {
+            background-color: var(--theme-palette-color-2);
+            color: var(--theme-palette-color-8);
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 14px;
+            margin-top: 60px;
+        }
+
+        /* Responsividad del header texto */
+        @media (max-width: 768px) {
+            .header-container {
+                justify-content: center;
+                text-align: center;
+            }
+            .header-text {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ENCABEZADO INSTITUCIONAL -->
+    <header class="corporate-header">
+        <div class="header-container">
+            <!-- Banner / Logo Aguas de Cartagena -->
+            <div class="header-logo">
+                <img src="banner-museo.png" alt="Museo Virtual del Agua - Aguas de Cartagena" onerror="this.src='https://placehold.co/600x200/24417C/ffffff?text=AGUAS+DE+CARTAGENA'; this.style.border='2px solid white';">
+            </div>
+            
+            <!-- Texto complementario -->
+            <div class="header-text">
+                <h1 style="margin: 0; font-size: 26px; color: white; letter-spacing: 1px;">MUSEO VIRTUAL DEL AGUA</h1>
+                <p style="margin: 5px 0 0; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--theme-palette-color-11);">
+                    Unidad de Responsabilidad Social
+                </p>
+                <p style="margin: 8px 0 0; font-size: 15px; opacity: 0.9; max-width: 400px; margin-left: auto;">
+                    Educando para el futuro y la sostenibilidad hídrica de Cartagena de Indias.
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENEDOR PRINCIPAL DE MÓDULOS -->
+    <main class="container-main">
+        
+        <div class="section-title">
+            <h2>Ruta Interactiva de Aprendizaje</h2>
+            <div class="divider"></div>
+            <p class="mt-4 text-gray-500 max-w-2xl mx-auto">Selecciona una de las estaciones para descubrir el viaje completo del agua potable y el proceso de saneamiento en nuestra ciudad.</p>
+        </div>
+
+        <div class="module-grid">
+            
+            <!-- MÓDULO 1: LA FUENTE -->
+            <div class="corporate-card">
+                <span class="status-badge">Módulo 01</span>
+                <h3><span class="text-3xl">🗺️</span> La Fuente</h3>
+                <p>Explora un mapa telemétrico interactivo del Canal del Dique. Descubre cómo inicia el recorrido del agua cruda a través de nuestras estaciones de bombeo.</p>
+                <a href="fuente.html" class="corporate-btn">Explorar Mapa GPS</a>
+            </div>
+
+            <!-- MÓDULO 2: POTABILIZACIÓN -->
+            <div class="corporate-card">
+                <span class="status-badge">Módulo 02</span>
+                <h3><span class="text-3xl">🧪</span> Potabilización</h3>
+                <p>Ingresa al laboratorio de la Planta El Bosque. Mezcla los químicos necesarios y descubre cómo transformamos el agua turbia en agua 100% segura para el consumo.</p>
+                <a href="laboratorio.html" class="corporate-btn">Entrar al Laboratorio</a>
+            </div>
+
+            <!-- MÓDULO 3: SCADA (DESTACADO) -->
+            <div class="corporate-card" style="border: 2px solid var(--theme-palette-color-10);">
+                <span class="status-badge badge-highlight">Destacado Operativo</span>
+                <h3><span class="text-3xl">🎛️</span> Centro de Control</h3>
+                <p>Ponte en los zapatos de un operador de telemando. Demuestra tus habilidades para equilibrar las presiones de los tanques de la ciudad en horas pico.</p>
+                <a href="scada.html" class="corporate-btn" style="background-color: var(--theme-palette-color-10);">Jugar Reto SCADA</a>
+            </div>
+
+            <!-- MÓDULO 4: HUELLA HÍDRICA -->
+            <div class="corporate-card">
+                <span class="status-badge">Módulo 04</span>
+                <h3><span class="text-3xl">💧</span> Hogar Sostenible</h3>
+                <p>Utiliza nuestra calculadora inteligente para medir tu consumo de agua en tiempo real. Aprende estrategias clave para reducir tu factura y tu impacto ambiental.</p>
+                <a href="huella.html" class="corporate-btn">Calcular mi Huella</a>
+            </div>
+
+            <!-- MÓDULO 5: AGUAS RESIDUALES -->
+            <div class="corporate-card">
+                <span class="status-badge">Módulo 05</span>
+                <h3><span class="text-3xl">🌊</span> El Ciclo Final</h3>
+                <p>Acompaña a las aguas residuales hacia el Emisario Submarino. Toma el control del pretratamiento y descubre qué residuos jamás deben arrojarse al desagüe.</p>
+                <a href="residuales.html" class="corporate-btn" style="background-color: var(--theme-palette-color-1);">Simulador de Red</a>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- PIE DE PÁGINA CORPORATIVO -->
+    <footer class="footer-corporate">
+        <div class="max-w-4xl mx-auto flex flex-col items-center">
+            <h3 style="color: white; margin-bottom: 10px;">AGUAS DE CARTAGENA S.A. E.S.P.</h3>
+            <p style="opacity: 0.8; margin-bottom: 20px;">Producto Mínimo Viable (MVP) - Desarrollo interno para Educación Ambiental</p>
+            <div class="w-16 h-1 rounded-full" style="background-color: var(--theme-palette-color-11);"></div>
+        </div>
+    </footer>
+
+</body>
+</html>
